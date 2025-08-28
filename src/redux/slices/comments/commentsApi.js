@@ -34,7 +34,6 @@ export const commentsApi = createApi({
                 method: "POST",
                 body: { content },
             }),
-            // no invalidatesTags; updates handled via WebSocket
         }),
         replyToComment: builder.mutation({
             query: ({ id, content }) => ({
@@ -44,13 +43,13 @@ export const commentsApi = createApi({
             }),
         }),
         likeComment: builder.mutation({
-            query: (id) => ({
+            query: ({ id }) => ({
                 url: `/comments/${id}/like`,
                 method: "POST",
             }),
         }),
         unlikeComment: builder.mutation({
-            query: (id) => ({
+            query: ({ id }) => ({
                 url: `/comments/${id}/unlike`,
                 method: "POST",
             }),

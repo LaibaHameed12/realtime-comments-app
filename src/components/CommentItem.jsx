@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   useLikeCommentMutation,
   useUnlikeCommentMutation,
@@ -13,8 +13,9 @@ import {
 } from "@/redux/slices/users/usersApi";
 import { Dot, ThumbsDown, ThumbsUp } from "lucide-react";
 import { formatTime } from "@/utils/formatTime";
+import { socket } from "@/app/page";
 
-const CommentItem = ({ comment, currentUserId }) => {
+const CommentItem = ({ comment, currentUserId, refetch }) => {
   const [replyText, setReplyText] = useState("");
 
   const [likeComment] = useLikeCommentMutation();
@@ -34,6 +35,7 @@ const CommentItem = ({ comment, currentUserId }) => {
     try {
       if (isFollowing) await unfollowUser(comment.author._id).unwrap();
       else await followUser(comment.author._id).unwrap();
+      refetch()
     } catch (err) {
       console.error(err);
     }
@@ -43,8 +45,7 @@ const CommentItem = ({ comment, currentUserId }) => {
     if (!currentUser || !comment._id) return;
     try {
       await likeComment({ id: comment._id }).unwrap();
-      // do NOT manually push to state
-      // socket will emit updated comment
+      refetch()
     } catch (err) {
       console.error(err);
     }
@@ -54,7 +55,7 @@ const CommentItem = ({ comment, currentUserId }) => {
     if (!currentUser || !comment._id) return;
     try {
       await unlikeComment({ id: comment._id }).unwrap();
-      // socket will emit updated comment
+      refetch()
     } catch (err) {
       console.error(err);
     }
@@ -64,8 +65,8 @@ const CommentItem = ({ comment, currentUserId }) => {
     if (!currentUser || replyText.trim() === "") return;
     try {
       await replyToComment({ id: comment._id, content: replyText }).unwrap();
-      setReplyText(""); // only clear input
-      // WebSocket will handle new reply
+      setReplyText("");
+      refetch()
     } catch (err) {
       console.error(err);
     }
@@ -92,9 +93,10 @@ const CommentItem = ({ comment, currentUserId }) => {
         {currentUser && currentUserId !== comment.author?._id && (
           <button
             onClick={handleFollowToggle}
-            className={`px-3 py-1 rounded-xl text-white cursor-pointer ${
-              isFollowing ? "bg-gray-500 hover:bg-gray-600" : "bg-blue-500 hover:bg-blue-600"
-            }`}
+            className={`px-3 py-1 rounded-xl text-white cursor-pointer ${isFollowing
+              ? "bg-gray-500 hover:bg-gray-600"
+              : "bg-blue-500 hover:bg-blue-600"
+              }`}
           >
             {isFollowing ? "Following" : "Follow"}
           </button>
@@ -109,7 +111,7 @@ const CommentItem = ({ comment, currentUserId }) => {
         <button
           onClick={handleLike}
           disabled={!currentUser}
-          className={`flex gap-2 ${hasLiked ? "text-blue-600" : ""}`}
+          className={`flex gap-2 cursor-pointer ${hasLiked ? "text-blue-600" : ""}`}
         >
           <ThumbsUp size={20} /> {comment.likes.length}
         </button>
@@ -117,7 +119,7 @@ const CommentItem = ({ comment, currentUserId }) => {
         <button
           onClick={handleUnlike}
           disabled={!currentUser}
-          className={`flex gap-2 ${hasUnliked ? "text-red-600" : ""}`}
+          className={`flex gap-2 cursor-pointer ${hasUnliked ? "text-red-600" : ""}`}
         >
           <ThumbsDown size={20} /> {comment.unlikes.length}
         </button>
@@ -127,7 +129,10 @@ const CommentItem = ({ comment, currentUserId }) => {
       {comment.replies?.length > 0 && (
         <div className="mt-3 space-y-2 pl-4 border-l-2 border-gray-200">
           {comment.replies.map((reply) => (
-            <div key={reply._id} className="text-gray-700 text-sm border-b border-gray-200 pb-3">
+            <div
+              key={reply._id}
+              className="text-gray-700 text-sm border-b border-gray-200 pb-3"
+            >
               <div className="flex gap-3 py-2">
                 <img
                   src="/user.png"
@@ -160,7 +165,7 @@ const CommentItem = ({ comment, currentUserId }) => {
             placeholder="Write a reply..."
             value={replyText}
             onChange={(e) => setReplyText(e.target.value)}
-            className="flex-1 border rounded-xl px-3 py-1"
+            className="flex-1 border rounded-xl px-3 py-1 cursor-pointer"
           />
           <button
             onClick={handleReply}

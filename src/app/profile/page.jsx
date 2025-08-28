@@ -15,8 +15,8 @@ const Profile = () => {
     const dispatch = useDispatch();
 
     // Single source of truth: getProfile query
-    const { data: user, isLoading, isError } = useGetProfileQuery(undefined, {
-        skip: !token, // skip if no token
+    const { data: user, isLoading, isError, refetch } = useGetProfileQuery(undefined, {
+        skip: !token, 
     });
 
     const [updateProfile] = useUpdateProfileMutation();
@@ -56,12 +56,6 @@ const Profile = () => {
                     Back to Home
                 </Link>
                 <div className="flex space-x-3">
-                    <Link
-                        href="/profile"
-                        className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition cursor-pointer"
-                    >
-                        <Bell />
-                    </Link>
                     <button
                         onClick={handleLogout}
                         className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 cursor-pointer"

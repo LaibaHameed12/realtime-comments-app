@@ -4,22 +4,19 @@ import { useSelector } from "react-redux";
 import Navbar from "@/components/Navbar";
 import CommentForm from "@/components/CommentForm";
 import CommentsList from "@/components/CommentsList";
-import { getUser, setWebsocket } from "@/redux/slices/auth/authSlice";
-import { useCreateCommentMutation } from "@/redux/slices/comments/commentsApi";
-import { useNotificationsSocket } from "@/hooks/useNotificationsSocket";
+import { getUser } from "@/redux/slices/auth/authSlice";
+import { useCreateCommentMutation, useGetCommentsQuery } from "@/redux/slices/comments/commentsApi";
 import { io } from "socket.io-client";
 import { useEffect } from "react";
-import { setSelectedNotification } from "@/redux/slices/notifications/notificationsSlice";
+import { useGetNotificationsQuery } from "@/redux/slices/notifications/notificationsApi";
 
 export let socket = null;
 export default function Home() {
   const userId = useSelector(getUser);
   const [createComment] = useCreateCommentMutation();
-
-  // Real-time updates
+  const { data: comments = [], isLoading, isError, refetch } = useGetCommentsQuery();
 
   useEffect(() => {
-    setSelectedNotification("jkgsjrsgu")
     if (!userId?._id) return;
 
     if (!socket) {
@@ -31,33 +28,83 @@ export default function Home() {
     return () => {
       return () => {
         if (socket) {
-          socket.off("notification");
           socket.off("commentCreated");
           socket.off("replyCreated");
-          socket.off("commentUpdated");
+          socket.off("likeNotification");
+          socket.off("dislikeNotification");
+          socket.off("followNotification");
           socket.disconnect();
           socket = null;
         }
       };
     }
-    // useNotificationsSocket(currentUser?._id);
   }, [userId?._id])
 
   const handleAddComment = async (data) => {
     if (!userId) return alert("You must be logged in to comment");
     try {
       await createComment(data.content).unwrap();
+      refetch()
     } catch (err) {
       console.error("Failed to post comment:", err);
     }
   };
 
+  const { data: apiNotifications = [], refetch: refetchNotification } = useGetNotificationsQuery(undefined, {
+    skip: !userId,
+  });
+
+  useEffect(() => {
+    if (socket) {
+      socket.on('commentCreated', () => {
+        refetchNotification();
+        refetch()
+      })
+    }
+  }, [socket])
+
+  useEffect(() => {
+    if (socket) {
+      socket.on("replyCreated", () => {
+        refetchNotification();
+        refetch();
+      });
+    }
+  }, [socket]);
+
+  useEffect(() => {
+    if (socket) {
+      socket.on("likeNotification", () => {
+        refetchNotification();
+        refetch();
+      });
+    }
+  }, [socket]);
+
+  useEffect(() => {
+    if (socket) {
+      socket.on("dislikeNotification", () => {
+        refetchNotification();
+        refetch()
+      });
+    }
+  }, [socket]);
+
+  useEffect(() => {
+    if (socket) {
+      socket.on("followNotification", () => {
+        refetchNotification();
+        refetch();
+      });
+    }
+  }, [socket]);
+
   return (
     <>
-      <Navbar />
+      <Navbar apiNotifications={apiNotifications} />
       <div className="max-w-xl mx-auto mt-6 space-y-6">
         <CommentForm currentUser={userId} onSubmit={handleAddComment} />
-        <CommentsList currentUserId={userId?._id} />
+        <CommentsList currentUserId={userId?._id} comments={comments} isLoading={isLoading} isError={isError} refetch={refetch} />
       </div>
     </>
   );

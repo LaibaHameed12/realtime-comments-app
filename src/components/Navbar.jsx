@@ -2,20 +2,11 @@
 
 import Link from "next/link";
 import { useSelector } from "react-redux";
-import { isAuthenticated, getUser } from "@/redux/slices/auth/authSlice";
+import { isAuthenticated } from "@/redux/slices/auth/authSlice";
 import { Bell } from "lucide-react";
-import { useGetNotificationsQuery } from "@/redux/slices/notifications/notificationsApi";
-import { useNotificationsSocket } from "@/hooks/useNotificationsSocket";
 
-const Navbar = () => {
+const Navbar = ({apiNotifications}) => {
   const reduxAuth = useSelector(isAuthenticated);
-  const currentUser = useSelector(getUser);
-
-  const { data: apiNotifications = [] } = useGetNotificationsQuery(undefined, {
-    skip: !currentUser,
-  });
-
-  useNotificationsSocket(currentUser?._id);
 
   const unreadCount = apiNotifications.filter((n) => !n.read).length;
 
