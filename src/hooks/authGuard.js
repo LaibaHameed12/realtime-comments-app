@@ -11,7 +11,7 @@ const AuthGuard = ({ children }) => {
 
     // Define route categories
     const publicRoutes = ["/login", "/register"];
-    const protectedRoutes = ["/profile"]; 
+    const protectedRoutes = ["/profile", "/notifications"]; 
 
     useEffect(() => {
         const path = window.location.pathname;
